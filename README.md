@@ -121,7 +121,7 @@ NIST has standardized new algorithms resistant to quantum attacks:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/post-quantum-check.git
+git clone https://github.com/gustcol/post-quantum-check.git
 cd post-quantum-check
 
 # Make executable
