@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-app
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 8080
+          env:
+            # JWT algorithm configuration - CHECK FOR PQ
+            - name: JWT_ALGORITHM
+              value: "RS256"  # QUANTUM VULNERABLE
+            - name: SIGNING_KEY_TYPE
+              value: "RSA"  # QUANTUM VULNERABLE
+            - name: KEY_EXCHANGE
+              value: "ECDH"  # QUANTUM VULNERABLE
+            # Safe configurations
+            - name: ENCRYPTION_ALGORITHM
+              value: "AES-256-GCM"  # QUANTUM RESISTANT
+            - name: HASH_ALGORITHM
+              value: "SHA-256"  # QUANTUM RESISTANT
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /etc/tls
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: {{ .Release.Name }}-tls

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crypto-app
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: crypto-app
+  template:
+    metadata:
+      labels:
+        app: crypto-app
+    spec:
+      containers:
+        - name: app
+          image: myapp:latest
+          ports:
+            - containerPort: 8443
+          env:
+            # Cryptographic configurations - CHECK FOR PQ
+            - name: TLS_CERT_TYPE
+              value: "RSA"  # QUANTUM VULNERABLE
+            - name: TLS_KEY_SIZE
+              value: "2048"
+            - name: JWT_ALGORITHM
+              value: "RS256"  # QUANTUM VULNERABLE
+            - name: SIGNATURE_ALGORITHM
+              value: "ECDSA"  # QUANTUM VULNERABLE
+            - name: KEY_EXCHANGE_ALGORITHM
+              value: "ECDH-P256"  # QUANTUM VULNERABLE
+            # Safe configurations
+            - name: SYMMETRIC_ENCRYPTION
+              value: "AES-256-GCM"  # QUANTUM RESISTANT
+            - name: HASH_FUNCTION
+              value: "SHA-384"  # QUANTUM RESISTANT
+            - name: PASSWORD_HASH
+              value: "argon2id"  # QUANTUM RESISTANT
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /etc/ssl/certs
+              readOnly: true
+            - name: signing-keys
+              mountPath: /etc/keys
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: app-tls-cert
+        - name: signing-keys
+          secret:
+            secretName: app-signing-keys
