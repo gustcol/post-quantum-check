@@ -1,0 +1,65 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: secure-ingress
+  namespace: default
+  annotations:
+    # SSL/TLS cipher configuration - CHECK FOR PQ
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "true"
+    # Certificate manager - uses RSA/ECDSA by default
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    cert-manager.io/private-key-algorithm: "RSA"  # QUANTUM VULNERABLE
+    cert-manager.io/private-key-size: "2048"
+    # Alternative ECDSA - QUANTUM VULNERABLE
+    # cert-manager.io/private-key-algorithm: "ECDSA"
+    # cert-manager.io/private-key-size: "256"
+    # HSTS configuration
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.example.com
+        - www.example.com
+      secretName: example-tls
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: internal-ingress
+  annotations:
+    # Using ECDSA certificates - QUANTUM VULNERABLE
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - internal.example.com
+      secretName: internal-tls
+  rules:
+    - host: internal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: internal-service
+                port:
+                  number: 8443
